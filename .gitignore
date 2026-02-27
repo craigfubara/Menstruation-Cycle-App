@@ -1,1 +1,43 @@
-*pyc
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# Media uploads
+media/
+
+# Static files (collected)
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log

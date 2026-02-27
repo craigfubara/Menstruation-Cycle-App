@@ -1,0 +1,123 @@
+{% extends 'Base.html' %}
+{% block title %}Cycle-Synced Lifestyle{% endblock %}
+
+{% block extra_head %}
+<style>
+    .lifestyle { max-width: 1100px; margin: 1rem auto; padding: 1rem 2rem; }
+    .lifestyle-header { text-align: center; margin-bottom: 2rem; }
+    .lifestyle-header h1 { font-weight: bold; }
+
+    .phase-indicator { text-align: center; padding: 1.5rem; border-radius: 12px; color: white; margin-bottom: 2rem; }
+    .phase-indicator h2 { margin: 0 0 0.3rem; }
+    .phase-indicator p { margin: 0; opacity: 0.9; }
+    .phase-indicator .day-badge { font-size: 2.5rem; font-weight: bold; }
+
+    .rec-section { margin-bottom: 2.5rem; }
+    .rec-section h2 { display: flex; align-items: center; gap: 0.5rem; color: #333; font-size: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid; }
+    .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+    .rec-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s; }
+    .rec-card:hover { transform: translateY(-2px); }
+    .rec-card .rec-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+    .rec-card h3 { font-size: 1.1rem; color: #333; margin-bottom: 0.5rem; }
+    .rec-card p { color: #666; font-size: 0.9rem; line-height: 1.6; margin: 0; }
+
+    .no-data { text-align: center; padding: 3rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .no-data i { font-size: 4rem; color: #ddd; margin-bottom: 1rem; }
+
+    .all-phases { margin-top: 2rem; }
+    .phase-tab { display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; margin: 0.3rem; cursor: pointer; border: 2px solid #ddd; text-decoration: none; color: #666; font-weight: 500; }
+    .phase-tab:hover, .phase-tab.active { color: white; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="lifestyle">
+    <div class="lifestyle-header">
+        <h1 style="color: {% if recommendations %}{{ recommendations.color }}{% else %}#af2323{% endif %};">
+            <i class="fas fa-spa"></i> Cycle-Synced Lifestyle
+        </h1>
+        <p class="text-muted">Personalized recommendations for pain relief, exercise, nutrition, and self-care based on your current cycle phase.</p>
+    </div>
+
+    {% if recommendations %}
+    <!-- Current Phase -->
+    <div class="phase-indicator" style="background: {{ recommendations.color }};">
+        {% if cycle_day %}<div class="day-badge">Day {{ cycle_day }}</div>{% endif %}
+        <h2>{{ recommendations.phase_name }} - {{ recommendations.phase_emoji }}</h2>
+        <p>{{ recommendations.summary }}</p>
+    </div>
+
+    <!-- Pain Relief (PRIORITY - shown first) -->
+    {% if recommendations.pain_relief %}
+    <div class="rec-section">
+        <h2 style="border-color: #e74c3c;"><i class="fas fa-first-aid" style="color: #e74c3c;"></i> Pain Relief & Management</h2>
+        <div class="rec-grid">
+            {% for rec in recommendations.pain_relief %}
+            <div class="rec-card" style="border-top: 3px solid #e74c3c;">
+                <div class="rec-icon" style="color: #e74c3c;"><i class="{{ rec.icon }}"></i></div>
+                <h3>{{ rec.title }}</h3>
+                <p>{{ rec.desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Exercise -->
+    {% if recommendations.exercise %}
+    <div class="rec-section">
+        <h2 style="border-color: #2ecc71;"><i class="fas fa-running" style="color: #2ecc71;"></i> Exercise & Movement</h2>
+        <div class="rec-grid">
+            {% for rec in recommendations.exercise %}
+            <div class="rec-card" style="border-top: 3px solid #2ecc71;">
+                <div class="rec-icon" style="color: #2ecc71;"><i class="{{ rec.icon }}"></i></div>
+                <h3>{{ rec.title }}</h3>
+                <p>{{ rec.desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Nutrition -->
+    {% if recommendations.nutrition %}
+    <div class="rec-section">
+        <h2 style="border-color: #f39c12;"><i class="fas fa-utensils" style="color: #f39c12;"></i> Nutrition</h2>
+        <div class="rec-grid">
+            {% for rec in recommendations.nutrition %}
+            <div class="rec-card" style="border-top: 3px solid #f39c12;">
+                <div class="rec-icon" style="color: #f39c12;"><i class="{{ rec.icon }}"></i></div>
+                <h3>{{ rec.title }}</h3>
+                <p>{{ rec.desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Self Care -->
+    {% if recommendations.self_care %}
+    <div class="rec-section">
+        <h2 style="border-color: #9b59b6;"><i class="fas fa-spa" style="color: #9b59b6;"></i> Self Care</h2>
+        <div class="rec-grid">
+            {% for rec in recommendations.self_care %}
+            <div class="rec-card" style="border-top: 3px solid #9b59b6;">
+                <div class="rec-icon" style="color: #9b59b6;"><i class="{{ rec.icon }}"></i></div>
+                <h3>{{ rec.title }}</h3>
+                <p>{{ rec.desc }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="no-data">
+        <i class="fas fa-calendar-plus"></i>
+        <h2>Start Tracking to Get Personalized Recommendations</h2>
+        <p>Log your period to unlock cycle-synced lifestyle recommendations tailored to your body.</p>
+        <a href="{% url 'App_Tracker:log_period' %}" class="custom-btn btn-2 mt-3">Log Your Period</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

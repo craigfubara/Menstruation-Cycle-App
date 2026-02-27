@@ -1,0 +1,89 @@
+{% extends 'Base.html' %}
+{% block title %}Cycle History{% endblock %}
+
+{% block extra_head %}
+<style>
+    .history { max-width: 900px; margin: 1rem auto; padding: 1rem 2rem; }
+    .history h1 { color: #3498db; font-weight: bold; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .stat-box { background: white; border-radius: 10px; padding: 1.2rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .stat-box .label { color: #888; font-size: 0.8rem; text-transform: uppercase; }
+    .stat-box .val { font-size: 1.8rem; font-weight: bold; color: #333; }
+    .cycle-table { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+    .cycle-table th { color: #888; font-weight: 600; padding: 0.5rem 1rem; text-transform: uppercase; font-size: 0.8rem; }
+    .cycle-table td { background: white; padding: 1rem; }
+    .cycle-table tr td:first-child { border-radius: 8px 0 0 8px; }
+    .cycle-table tr td:last-child { border-radius: 0 8px 8px 0; }
+    .period-bar { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+    .period-fill { height: 100%; background: #e74c3c; border-radius: 4px; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="history">
+    <h1><i class="fas fa-history"></i> Cycle History</h1>
+
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="label">Average Cycle</div>
+            <div class="val">{{ stats.avg_cycle_length }} days</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Average Period</div>
+            <div class="val">{{ stats.avg_period_length }} days</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Cycles Tracked</div>
+            <div class="val">{{ stats.total_cycles }}</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Variation</div>
+            <div class="val">&plusmn;{{ stats.std_dev }} days</div>
+        </div>
+        {% if stats.shortest_cycle %}
+        <div class="stat-box">
+            <div class="label">Shortest</div>
+            <div class="val">{{ stats.shortest_cycle }} days</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">Longest</div>
+            <div class="val">{{ stats.longest_cycle }} days</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <table class="cycle-table">
+        <thead>
+            <tr>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Period Length</th>
+                <th>Cycle Length</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cycle in cycles %}
+            <tr>
+                <td><strong>{{ cycle.period_start_date|date:"M d, Y" }}</strong></td>
+                <td>{{ cycle.period_end_date|date:"M d, Y"|default:"Ongoing" }}</td>
+                <td>
+                    {% if cycle.period_length %}
+                    {{ cycle.period_length }} days
+                    <div class="period-bar" style="width:100px;">
+                        <div class="period-fill" style="width:{% widthratio cycle.period_length 10 100 %}%"></div>
+                    </div>
+                    {% else %}--{% endif %}
+                </td>
+                <td>{% if cycle.cycle_length %}{{ cycle.cycle_length }} days{% else %}--{% endif %}</td>
+                <td style="max-width:200px; font-size:0.85rem; color:#666;">{{ cycle.notes|truncatechars:80 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No cycles logged yet. <a href="{% url 'App_Tracker:log_period' %}">Log your first period</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

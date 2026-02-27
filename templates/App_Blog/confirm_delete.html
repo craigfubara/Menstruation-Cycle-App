@@ -1,0 +1,15 @@
+{% extends 'Base.html' %}
+{% block title %}Delete Blog{% endblock %}
+
+{% block body_block %}
+<div style="max-width: 600px; margin: 3rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); text-align: center;">
+    <h2 style="color: #e74c3c;">Delete Blog</h2>
+    <p>Are you sure you want to delete "<strong>{{ object.blog_title }}</strong>"?</p>
+    <p class="text-muted">This action cannot be undone.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'App_Blog:my_blogs' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

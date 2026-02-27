@@ -1,0 +1,96 @@
+{% extends 'Base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}{{ story.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .story-page { max-width: 800px; margin: 1rem auto; padding: 1rem 2rem; }
+    .story-full { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 2rem; }
+    .story-full .cat-tag { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 15px; color: white; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }
+    .story-full h1 { color: #333; font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .story-author { color: #888; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .story-body { color: #444; font-size: 1.05rem; line-height: 1.8; }
+    .reaction-bar { display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #f0f0f0; }
+    .reaction-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; border-radius: 25px; border: 2px solid #ddd; background: white; cursor: pointer; font-weight: 500; transition: all 0.2s; text-decoration: none; color: #666; }
+    .reaction-btn:hover { transform: scale(1.05); }
+    .reaction-btn.active-me-too { border-color: #e74c3c; color: #e74c3c; background: #fde8e8; }
+    .reaction-btn.active-support { border-color: #9b59b6; color: #9b59b6; background: #f3e5f5; }
+
+    .comments-section { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .comment { padding: 1rem 0; border-bottom: 1px solid #f0f0f0; }
+    .comment:last-child { border-bottom: none; }
+    .comment-author { font-weight: bold; color: #af2323; }
+    .comment-time { color: #aaa; font-size: 0.8rem; }
+    .comment-text { color: #444; margin-top: 0.3rem; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="story-page">
+    <a href="{% url 'App_Community:story_list' %}" style="color: #888; text-decoration: none;">
+        <i class="fas fa-arrow-left"></i> Back to Stories
+    </a>
+
+    <div class="story-full mt-3">
+        <span class="cat-tag" style="background: {{ story.category.color }};">
+            <i class="{{ story.category.icon }}"></i> {{ story.category.name }}
+        </span>
+        <h1>{{ story.title }}</h1>
+        <div class="story-author">
+            Shared by <strong>{{ story.anonymous_name }}</strong>
+            {% if story.age_at_experience %} &bull; Age {{ story.age_at_experience }} at the time{% endif %}
+            &bull; {{ story.created_at|timesince }} ago
+        </div>
+        <div class="story-body">
+            {{ story.content|linebreaks }}
+        </div>
+
+        <!-- Reactions -->
+        <div class="reaction-bar">
+            {% if user.is_authenticated %}
+            <form method="post" action="{% url 'App_Community:react' pk=story.pk reaction_type='me_too' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="reaction-btn {% if 'me_too' in user_reactions %}active-me-too{% endif %}">
+                    <i class="fas fa-heart"></i> Me Too ({{ story.me_too_count }})
+                </button>
+            </form>
+            <form method="post" action="{% url 'App_Community:react' pk=story.pk reaction_type='support' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="reaction-btn {% if 'support' in user_reactions %}active-support{% endif %}">
+                    <i class="fas fa-hand-holding-heart"></i> Sending Support ({{ story.support_count }})
+                </button>
+            </form>
+            {% else %}
+            <span class="reaction-btn"><i class="fas fa-heart"></i> {{ story.me_too_count }} relate</span>
+            <span class="reaction-btn"><i class="fas fa-hand-holding-heart"></i> {{ story.support_count }} support</span>
+            <a href="{% url 'App_Login:signin' %}" class="reaction-btn">Login to react</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Comments -->
+    <div class="comments-section">
+        <h3><i class="fas fa-comments"></i> Support & Comments ({{ comments|length }})</h3>
+
+        {% if user.is_authenticated %}
+        <form method="post" class="mt-3 mb-3">
+            {% csrf_token %}
+            {{ comment_form|crispy }}
+            <button type="submit" class="custom-btn btn-2 mt-2">Share Support</button>
+        </form>
+        {% else %}
+        <p class="text-muted"><a href="{% url 'App_Login:signin' %}">Login</a> to leave a supportive comment.</p>
+        {% endif %}
+
+        {% for comment in comments %}
+        <div class="comment">
+            <span class="comment-author">{{ comment.anonymous_name }}</span>
+            <span class="comment-time">&bull; {{ comment.created_at|timesince }} ago</span>
+            <p class="comment-text">{{ comment.content }}</p>
+        </div>
+        {% empty %}
+        <p class="text-muted mt-3">No comments yet. Be the first to show support!</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

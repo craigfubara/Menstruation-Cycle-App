@@ -1,0 +1,217 @@
+{% extends 'Base.html' %}
+{% load static %}
+{% block title %}My Cycle Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    .dashboard { padding: 1rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .dashboard h1 { color: #af2323; font-weight: bold; margin-bottom: 1.5rem; }
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .stat-card h3 { font-size: 0.9rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .stat-card .value { font-size: 2rem; font-weight: bold; color: #333; }
+    .stat-card .sub { font-size: 0.85rem; color: #666; margin-top: 0.3rem; }
+
+    .phase-banner { border-radius: 12px; padding: 1.5rem 2rem; color: white; margin-bottom: 2rem; display: flex; align-items: center; gap: 1.5rem; }
+    .phase-day { font-size: 3rem; font-weight: bold; min-width: 80px; text-align: center; }
+    .phase-info h2 { margin: 0 0 0.3rem 0; }
+    .phase-info p { margin: 0; opacity: 0.9; }
+
+    .section-title { font-size: 1.4rem; font-weight: bold; color: #333; margin: 1.5rem 0 1rem; }
+    .quick-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .quick-action { background: linear-gradient(135deg, #ffa9b2, #ff7088); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 25px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: transform 0.2s; }
+    .quick-action:hover { transform: scale(1.05); color: white; text-decoration: none; }
+
+    .pain-summary { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+    .pain-meter { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0; }
+    .pain-bar { flex: 1; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
+    .pain-fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
+
+    .predictions-list { list-style: none; padding: 0; }
+    .predictions-list li { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+    .prediction-date { font-weight: bold; color: #e74c3c; }
+    .confidence-badge { background: #e8f5e9; color: #2e7d32; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; }
+
+    .chart-container { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+    canvas { max-height: 300px; }
+
+    .cycle-history-mini { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .cycle-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
+    .cycle-row:last-child { border-bottom: none; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="dashboard">
+    <h1><i class="fas fa-heartbeat"></i> My Cycle Dashboard</h1>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="{% url 'App_Tracker:daily_log' %}" class="quick-action">
+            <i class="fas fa-plus-circle"></i> Log Today
+        </a>
+        <a href="{% url 'App_Tracker:log_period' %}" class="quick-action" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+            <i class="fas fa-tint"></i> Log Period
+        </a>
+        <a href="{% url 'App_Tracker:pain_management' %}" class="quick-action" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+            <i class="fas fa-first-aid"></i> Pain Management
+        </a>
+        <a href="{% url 'App_Tracker:cycle_history' %}" class="quick-action" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+            <i class="fas fa-history"></i> History
+        </a>
+    </div>
+
+    <!-- Current Phase Banner -->
+    {% if current_phase %}
+    <div class="phase-banner" style="background: {{ current_phase.color }};">
+        <div class="phase-day">Day {{ cycle_day }}</div>
+        <div class="phase-info">
+            <h2>{{ current_phase.name }}</h2>
+            <p>{{ current_phase.description }}</p>
+        </div>
+    </div>
+    {% else %}
+    <div class="phase-banner" style="background: #95a5a6;">
+        <div class="phase-info">
+            <h2>Welcome! Start tracking your cycle</h2>
+            <p>Log your first period to get personalized insights, predictions, and pain management tips.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Stat Cards -->
+    <div class="stat-cards">
+        <div class="stat-card">
+            <h3>Next Period</h3>
+            {% if days_until_period is not None %}
+            <div class="value">{{ days_until_period }} days</div>
+            <div class="sub">Predicted: {{ next_prediction.predicted_start|date:"M d" }}</div>
+            {% else %}
+            <div class="value">--</div>
+            <div class="sub">Log periods to get predictions</div>
+            {% endif %}
+        </div>
+        <div class="stat-card">
+            <h3>Average Cycle</h3>
+            <div class="value">{{ stats.avg_cycle_length }} days</div>
+            <div class="sub">Based on {{ stats.total_cycles }} cycle{{ stats.total_cycles|pluralize }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Average Pain</h3>
+            <div class="value">{{ pain_insights.avg_pain }}/10</div>
+            <div class="sub">{{ pain_insights.total_pain_days }} pain days tracked</div>
+        </div>
+        <div class="stat-card">
+            <h3>Today's Status</h3>
+            {% if today_log %}
+            <div class="value">Logged <i class="fas fa-check-circle" style="color: #2ecc71;"></i></div>
+            <div class="sub">Pain: {{ today_log.pain_level }}/10 | Flow: {{ today_log.get_flow_level_display }}</div>
+            {% else %}
+            <div class="value">Not Logged</div>
+            <div class="sub"><a href="{% url 'App_Tracker:daily_log' %}">Log now</a></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pain Summary -->
+    <div class="pain-summary">
+        <h3 class="section-title"><i class="fas fa-first-aid"></i> Pain Insights</h3>
+        <p>{{ pain_insights.pain_pattern }}</p>
+        {% if pain_insights.best_remedies %}
+        <h4>Your Most Effective Remedies:</h4>
+        <ul>
+            {% for remedy in pain_insights.best_remedies %}
+            <li><strong>{{ remedy.name }}</strong> - Avg effectiveness: {{ remedy.avg_effectiveness }}/5 (used {{ remedy.times_used }} times)</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- Chart -->
+        <div class="col-md-7">
+            <div class="chart-container">
+                <h3 class="section-title">30-Day Tracking</h3>
+                <canvas id="trackingChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Predictions -->
+        <div class="col-md-5">
+            <div class="stat-card">
+                <h3 class="section-title">Upcoming Predictions</h3>
+                {% if predictions %}
+                <ul class="predictions-list">
+                    {% for pred in predictions %}
+                    <li>
+                        <div>
+                            <span class="prediction-date">{{ pred.predicted_start|date:"M d" }} - {{ pred.predicted_end|date:"M d" }}</span>
+                        </div>
+                        <span class="confidence-badge">{{ pred.confidence_score|floatformat:0 }}% conf.</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Log at least 2 periods to get predictions.</p>
+                {% endif %}
+            </div>
+
+            <!-- Recent Cycles -->
+            <div class="cycle-history-mini mt-3">
+                <h3 class="section-title">Recent Cycles</h3>
+                {% for cycle in cycle_logs %}
+                <div class="cycle-row">
+                    <span>{{ cycle.period_start_date|date:"M d, Y" }}</span>
+                    <span>{% if cycle.cycle_length %}{{ cycle.cycle_length }} days{% else %}--{% endif %}</span>
+                </div>
+                {% empty %}
+                <p>No cycles logged yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    const dates = {{ chart_dates|safe }};
+    const painData = {{ chart_pain|safe }};
+    const moodData = {{ chart_mood|safe }};
+
+    if (dates.length > 0) {
+        const ctx = document.getElementById('trackingChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Pain Level',
+                        data: painData,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                    },
+                    {
+                        label: 'Mood',
+                        data: moodData,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 10 }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

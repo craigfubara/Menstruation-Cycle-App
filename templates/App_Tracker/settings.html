@@ -1,0 +1,82 @@
+{% extends 'Base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Tracker Settings{% endblock %}
+
+{% block extra_head %}
+<style>
+    .settings { max-width: 800px; margin: 1rem auto; padding: 1rem 2rem; }
+    .settings h1 { color: #333; font-weight: bold; }
+    .settings-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+    .settings-card h3 { color: #af2323; border-bottom: 2px solid #ffa9b2; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    .share-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="settings">
+    <h1><i class="fas fa-cog"></i> Tracker Settings</h1>
+
+    <!-- Reminders -->
+    <div class="settings-card">
+        <h3><i class="fas fa-bell"></i> Reminder Preferences</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ reminder_form|crispy }}
+            <button type="submit" name="save_reminders" class="custom-btn btn-2">Save Preferences</button>
+        </form>
+    </div>
+
+    <!-- Partner Sharing -->
+    <div class="settings-card">
+        <h3><i class="fas fa-user-friends"></i> Partner Sharing</h3>
+        <p class="text-muted">Share your cycle info with a partner. They must have an account. You control exactly what they see.</p>
+
+        {% if shares %}
+        <h4>Currently Sharing With:</h4>
+        {% for share in shares %}
+        <div class="share-item">
+            <div>
+                <strong>{{ share.partner.username }}</strong>
+                <span class="badge bg-info">{{ share.get_share_level_display }}</span>
+            </div>
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="share_id" value="{{ share.pk }}">
+                <button type="submit" name="remove_partner" class="btn btn-sm btn-outline-danger">Remove</button>
+            </form>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if partner_views %}
+        <h4 class="mt-3">People Sharing With You:</h4>
+        {% for share in partner_views %}
+        <div class="share-item">
+            <div>
+                <strong>{{ share.user.username }}</strong> shares
+                <span class="badge bg-info">{{ share.get_share_level_display }}</span>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <h4 class="mt-3">Add a Partner:</h4>
+        <form method="post">
+            {% csrf_token %}
+            {{ partner_form|crispy }}
+            <button type="submit" name="add_partner" class="custom-btn btn-2">Share</button>
+        </form>
+    </div>
+
+    <div class="settings-card">
+        <h3><i class="fas fa-shield-alt"></i> Privacy</h3>
+        <p>Your health data is private by default. Only people you explicitly share with can see your cycle information. We never sell or share your data with third parties.</p>
+        <ul>
+            <li>All data stored securely on our servers</li>
+            <li>You can export or delete all your data at any time</li>
+            <li>Partner sharing requires your explicit consent</li>
+            <li>You control exactly what partners can see</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -3,31 +3,18 @@
 
 {% block title %} Edit Blog {% endblock title %}
 
-
 {% block body_block %}
-
 
 <div class="editblog">
     <div class="editblogbox">
-        {% if blog.author == user %}
-        <form method="post">
-
-            {{form| crispy}}
+        <h2>Edit Your Blog</h2>
+        <form method="post" enctype="multipart/form-data">
+            {{ form|crispy }}
             {% csrf_token %}
             <button type="submit" class="btn btn-info btn-sm">Update</button>
-            
+            <a href="{% url 'App_Blog:my_blogs' %}" class="btn btn-secondary btn-sm">Cancel</a>
         </form>
-        {% else %}
-        
-        <p> You are not allowed to edit this page </p>
-        
-        
-        
-        {% endif %}
-
     </div>
 </div>
-
-
 
 {% endblock %}

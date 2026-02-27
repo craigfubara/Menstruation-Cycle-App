@@ -1,0 +1,30 @@
+{% extends 'Base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Log Period{% endblock %}
+
+{% block extra_head %}
+<style>
+    .log-period { max-width: 600px; margin: 2rem auto; padding: 2rem; }
+    .log-card { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+    .log-card h1 { color: #e74c3c; font-size: 1.8rem; margin-bottom: 1.5rem; }
+    .log-card .icon-header { font-size: 3rem; text-align: center; margin-bottom: 1rem; color: #e74c3c; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="log-period">
+    <div class="log-card">
+        <div class="icon-header"><i class="fas fa-tint"></i></div>
+        <h1 class="text-center">Log Your Period</h1>
+        <p class="text-center text-muted">Track when your period starts and ends to improve predictions.</p>
+        <form method="post">
+            {{ form|crispy }}
+            {% csrf_token %}
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="custom-btn btn-2 flex-grow-1">Save Period</button>
+                <a href="{% url 'App_Tracker:dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

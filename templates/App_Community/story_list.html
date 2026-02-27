@@ -1,0 +1,124 @@
+{% extends 'Base.html' %}
+{% block title %}Community Stories{% endblock %}
+
+{% block extra_head %}
+<style>
+    .community { max-width: 1100px; margin: 1rem auto; padding: 1rem 2rem; }
+    .community-header { text-align: center; margin-bottom: 2rem; }
+    .community-header h1 { color: #af2323; font-weight: bold; }
+    .community-header p { color: #666; font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+
+    .category-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 1.5rem; }
+    .category-pill { padding: 0.4rem 1rem; border-radius: 20px; text-decoration: none; border: 2px solid #ddd; color: #666; font-size: 0.9rem; transition: all 0.2s; }
+    .category-pill:hover, .category-pill.active { border-color: #e74c3c; color: #e74c3c; background: #fde8e8; text-decoration: none; }
+
+    .sort-bar { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem; }
+    .sort-btn { text-decoration: none; color: #888; font-weight: 500; }
+    .sort-btn.active { color: #e74c3c; border-bottom: 2px solid #e74c3c; }
+
+    .stories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    .story-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); transition: transform 0.2s; display: flex; flex-direction: column; }
+    .story-card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.12); }
+    .story-category-tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; color: white; margin-bottom: 0.8rem; }
+    .story-card h3 { font-size: 1.1rem; color: #333; margin-bottom: 0.5rem; }
+    .story-card h3 a { color: inherit; text-decoration: none; }
+    .story-card h3 a:hover { color: #e74c3c; }
+    .story-excerpt { color: #666; font-size: 0.9rem; flex-grow: 1; margin-bottom: 1rem; }
+    .story-meta { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; padding-top: 0.8rem; }
+    .story-reactions { display: flex; gap: 1rem; }
+    .reaction { display: flex; align-items: center; gap: 0.3rem; color: #888; font-size: 0.85rem; }
+    .reaction i { font-size: 1rem; }
+    .story-time { color: #aaa; font-size: 0.8rem; }
+
+    .share-cta { text-align: center; margin: 2rem 0; padding: 2rem; background: linear-gradient(135deg, #ffa9b2, #ff7088); border-radius: 12px; color: white; }
+    .share-cta h2 { margin-bottom: 0.5rem; }
+    .share-cta a { background: white; color: #e74c3c; padding: 0.6rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: bold; display: inline-block; margin-top: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="community">
+    <div class="community-header">
+        <h1><i class="fas fa-hands-helping"></i> Community Stories</h1>
+        <p>A safe, anonymous space to share experiences and find you're not alone. Every story matters.</p>
+    </div>
+
+    <!-- Category Filters -->
+    <div class="category-filters">
+        <a href="{% url 'App_Community:story_list' %}" class="category-pill {% if not active_category %}active{% endif %}">All</a>
+        {% for cat in categories %}
+        <a href="{% url 'App_Community:story_list' %}?category={{ cat.slug }}"
+           class="category-pill {% if active_category.slug == cat.slug %}active{% endif %}"
+           style="{% if active_category.slug == cat.slug %}border-color: {{ cat.color }}; color: {{ cat.color }};{% endif %}">
+            <i class="{{ cat.icon }}"></i> {{ cat.name }} ({{ cat.story_count }})
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Sort -->
+    <div class="sort-bar">
+        <a href="?{% if active_category %}category={{ active_category.slug }}&{% endif %}sort=recent" class="sort-btn {% if sort == 'recent' %}active{% endif %}">Most Recent</a>
+        <a href="?{% if active_category %}category={{ active_category.slug }}&{% endif %}sort=me_too" class="sort-btn {% if sort == 'me_too' %}active{% endif %}">Most Relatable</a>
+        <a href="?{% if active_category %}category={{ active_category.slug }}&{% endif %}sort=support" class="sort-btn {% if sort == 'support' %}active{% endif %}">Most Supported</a>
+    </div>
+
+    <!-- Share CTA -->
+    <div class="share-cta">
+        <h2>Your Story Matters</h2>
+        <p>Sharing helps others feel less alone. You can be completely anonymous.</p>
+        {% if user.is_authenticated %}
+        <a href="{% url 'App_Community:share_story' %}"><i class="fas fa-pen"></i> Share Your Story</a>
+        {% else %}
+        <a href="{% url 'App_Login:signin' %}"><i class="fas fa-sign-in-alt"></i> Sign In to Share</a>
+        {% endif %}
+    </div>
+
+    <!-- Stories Grid -->
+    <div class="stories-grid">
+        {% for story in stories %}
+        <div class="story-card">
+            <span class="story-category-tag" style="background: {{ story.category.color }};">
+                <i class="{{ story.category.icon }}"></i> {{ story.category.name }}
+            </span>
+            <h3><a href="{% url 'App_Community:story_detail' slug=story.slug %}">{{ story.title }}</a></h3>
+            {% if story.age_at_experience %}
+            <small class="text-muted">Age {{ story.age_at_experience }} when this happened</small>
+            {% endif %}
+            <p class="story-excerpt">{{ story.content|truncatechars:200 }}</p>
+            <div class="story-meta">
+                <div class="story-reactions">
+                    <span class="reaction"><i class="fas fa-heart" style="color: #e74c3c;"></i> {{ story.me_too_count }} Me Too</span>
+                    <span class="reaction"><i class="fas fa-hand-holding-heart" style="color: #9b59b6;"></i> {{ story.support_count }}</span>
+                    <span class="reaction"><i class="fas fa-comment"></i> {{ story.comments.count }}</span>
+                </div>
+                <span class="story-time">{{ story.created_at|timesince }} ago</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
+            <h3>No stories yet in this category.</h3>
+            <p>Be the first to share your experience!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if stories.has_other_pages %}
+    <nav class="mt-4 mb-4">
+        <ul class="pagination justify-content-center">
+            {% if stories.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ stories.previous_page_number }}{% if active_category %}&category={{ active_category.slug }}{% endif %}&sort={{ sort }}">Previous</a></li>
+            {% endif %}
+            {% for num in stories.paginator.page_range %}
+            <li class="page-item {% if stories.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if active_category %}&category={{ active_category.slug }}{% endif %}&sort={{ sort }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+            {% if stories.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ stories.next_page_number }}{% if active_category %}&category={{ active_category.slug }}{% endif %}&sort={{ sort }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

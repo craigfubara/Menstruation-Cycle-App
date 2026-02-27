@@ -1,0 +1,160 @@
+{% extends 'Base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Daily Log - {{ today }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .daily-log { max-width: 800px; margin: 1rem auto; padding: 1rem 2rem; }
+    .log-section { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+    .log-section h3 { color: #af2323; font-size: 1.2rem; margin-bottom: 1rem; border-bottom: 2px solid #ffa9b2; padding-bottom: 0.5rem; }
+    .pain-display { font-size: 2rem; font-weight: bold; text-align: center; margin: 0.5rem 0; transition: color 0.3s; }
+    .symptom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
+    .symptom-chip { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.8rem; border: 2px solid #ddd; border-radius: 20px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; }
+    .symptom-chip:hover { border-color: #ffa9b2; background: #fff5f6; }
+    .symptom-chip.selected { border-color: #e74c3c; background: #fde8e8; color: #e74c3c; font-weight: bold; }
+    .symptom-chip input { display: none; }
+    .symptom-category { margin-bottom: 1rem; }
+    .symptom-category h4 { color: #666; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .pain-locations { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block body_block %}
+<div class="daily-log">
+    <h1 style="color: #af2323;"><i class="fas fa-calendar-day"></i> Daily Log - {{ today|date:"l, M d" }}</h1>
+    {% if existing_log %}
+    <div class="alert alert-info">You've already logged today. Changes will update your existing entry.</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Pain Section -->
+        <div class="log-section">
+            <h3><i class="fas fa-bolt"></i> Pain & Discomfort</h3>
+            <label>How much pain are you in right now?</label>
+            <div class="pain-display" id="painValue">{{ form.pain_level.value|default:"0" }}</div>
+            {{ form.pain_level }}
+            <div class="d-flex justify-content-between text-muted" style="font-size:0.8rem;">
+                <span>No Pain</span><span>Moderate</span><span>Severe</span>
+            </div>
+
+            <label class="mt-3">Where is the pain?</label>
+            <div class="pain-locations">
+                {% for value, label in form.pain_location_choices.field.choices %}
+                <label class="symptom-chip {% if value in form.pain_location_choices.value %}selected{% endif %}">
+                    <input type="checkbox" name="pain_location_choices" value="{{ value }}"
+                        {% if value in form.pain_location_choices.value %}checked{% endif %}>
+                    {{ label }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Flow -->
+        <div class="log-section">
+            <h3><i class="fas fa-tint"></i> Flow</h3>
+            <div class="mb-3">
+                <label>Flow Level</label>
+                {{ form.flow_level }}
+            </div>
+        </div>
+
+        <!-- Mood & Energy -->
+        <div class="log-section">
+            <h3><i class="fas fa-smile"></i> Mood & Energy</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label>Mood</label>
+                    {{ form.mood }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>Energy Level</label>
+                    {{ form.energy }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Symptoms -->
+        <div class="log-section">
+            <h3><i class="fas fa-stethoscope"></i> Symptoms</h3>
+            {% for category, symptom_list in symptoms_by_category.items %}
+            <div class="symptom-category">
+                <h4>{{ category }}</h4>
+                <div class="symptom-grid">
+                    {% for symptom in symptom_list %}
+                    <label class="symptom-chip {% if symptom.id in selected_symptoms %}selected{% endif %}">
+                        <input type="checkbox" name="symptoms" value="{{ symptom.id }}"
+                            {% if symptom.id in selected_symptoms %}checked{% endif %}>
+                        <i class="{{ symptom.icon }}"></i> {{ symptom.name }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Body Metrics -->
+        <div class="log-section">
+            <h3><i class="fas fa-chart-line"></i> Body Metrics</h3>
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label>Temperature (F)</label>
+                    {{ form.temperature }}
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label>Sleep (hours)</label>
+                    {{ form.sleep_hours }}
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label>Exercise (min)</label>
+                    {{ form.exercise_minutes }}
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label>Water (glasses)</label>
+                    {{ form.water_intake }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="log-section">
+            <h3><i class="fas fa-pen"></i> Notes</h3>
+            {{ form.notes }}
+        </div>
+
+        <div class="d-flex gap-2 mb-4">
+            <button type="submit" class="custom-btn btn-2 flex-grow-1">Save Daily Log</button>
+            <a href="{% url 'App_Tracker:dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pain slider display
+    const slider = document.getElementById('painSlider') || document.querySelector('input[type="range"]');
+    const painValue = document.getElementById('painValue');
+    if (slider && painValue) {
+        slider.addEventListener('input', function() {
+            painValue.textContent = this.value;
+            const level = parseInt(this.value);
+            if (level <= 3) painValue.style.color = '#2ecc71';
+            else if (level <= 6) painValue.style.color = '#f39c12';
+            else painValue.style.color = '#e74c3c';
+        });
+    }
+
+    // Symptom chip toggle
+    document.querySelectorAll('.symptom-chip').forEach(chip => {
+        chip.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT') {
+                const checkbox = this.querySelector('input');
+                checkbox.checked = !checkbox.checked;
+            }
+            this.classList.toggle('selected', this.querySelector('input').checked);
+        });
+    });
+</script>
+{% endblock %}

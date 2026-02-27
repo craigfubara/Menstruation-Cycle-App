@@ -2,34 +2,29 @@
 {% load static %}
 {% block title %} Profile Page {% endblock title %}
 
-
 {% block body_block %}
 
-    
 <div class="profile-container">
-<h2> Your Profile</h2>
+    <h2>Your Profile</h2>
+    <div class="profile-card">
+        {% if has_profile %}
+        <img src="{{ user.user_profile.profile_pic.url }}" class="rounded-circle" width="120px" alt="Profile Picture">
+        <br>
+        <a href="{% url 'App_Login:change_pro_pic' %}" class="btn btn-info btn-sm">Change Profile Pic</a>
+        {% else %}
+        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:120px;height:120px;">
+            <span style="font-size:3rem;color:white;">{{ user.username|first|upper }}</span>
+        </div>
+        <br>
+        <a href="{% url 'App_Login:add_pro_pic' %}" class="btn btn-info btn-sm">Add Profile Pic</a>
+        {% endif %}
 
-
-<div class="profile-card">
-
-{% if user.user_profile %}
-
-<img src="/media/{{user.user_profile.profile_pic}}" class="rounded-circle" width="120px"  alt="">
-<br>
-<a href="{% url 'App_Login:change_pro_pic'%} " class="btn btn-info btn-sm">Change Profile</a>
-
-{% else %}
-<img src="/media/download.jpg" class="rounded-circle"  width="120px" alt="">
-<br>
-<a href="{% url 'App_Login:add_pro_pic'%}" class="btn btn-info btn-sm">Change Profile Pic</a>
-
-{% endif %}
-<p>Username :{{ user.username }}</p>
-<p>Email: {{ user.email }}</p>
-<p>Name :{{ user.first_name }} {{ user.last_name }}</p>
-
-<br>
-<a href="{% url 'App_Login:user_change' %}" class="btn btn-warning btn-sm"> Change Profile Info</a>
+        <p>Username: {{ user.username }}</p>
+        <p>Email: {{ user.email }}</p>
+        <p>Name: {{ user.first_name }} {{ user.last_name }}</p>
+        <br>
+        <a href="{% url 'App_Login:user_change' %}" class="btn btn-warning btn-sm">Change Profile Info</a>
+        <a href="{% url 'App_Login:pass_change' %}" class="btn btn-secondary btn-sm">Change Password</a>
+    </div>
+</div>
 {% endblock body_block %}
-</div>
-</div>
